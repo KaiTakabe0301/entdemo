@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"entdemo/ent"
+	"entdemo/ent/user"
 
 	_ "github.com/lib/pq"
 )
@@ -21,18 +22,19 @@ func main() {
         log.Fatalf("failed creating schema resources: %v", err)
     }
 
-    CreateUser(context.Background(), client)
+    QueryUser(context.Background(), client)
 }
 
-func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
+func QueryUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
     u, err := client.User.
-        Create().
-        SetAge(30).
-        SetName("a8m").
-        Save(ctx)
+        Query().
+        Where(user.Name("a8m")).
+        // `Only` fails if no user found,
+        // or more than 1 user returned.
+        Only(ctx)
     if err != nil {
-        return nil, fmt.Errorf("failed creating user: %w", err)
+        return nil, fmt.Errorf("failed querying user: %w", err)
     }
-    log.Println("user was created: ", u)
+    log.Println("user returned: ", u)
     return u, nil
 }
