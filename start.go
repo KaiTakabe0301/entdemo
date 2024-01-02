@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"entdemo/ent"
+	"entdemo/ent/car"
+	"entdemo/ent/user"
 
 	_ "github.com/lib/pq"
 )
@@ -22,43 +23,31 @@ func main() {
         log.Fatalf("failed creating schema resources: %v", err)
     }
 
-    CreateCars(context.Background(), client)
+    a8m, err := client.User.Query().Where(user.NameEQ("a8m")).All(context.Background())
+    if err != nil {
+        log.Fatalf("failed querying user: %v", err)
+    }
+
+
+    QueryCars(context.Background(), a8m[0])
+    QueryCars(context.Background(), a8m[1])
 }
 
 
-func CreateCars(ctx context.Context, client *ent.Client) (*ent.User, error) {
-    // Create a new car with model "Tesla".
-    tesla, err := client.Car.
-        Create().
-        SetModel("Tesla").
-        SetRegisteredAt(time.Now()).
-        Save(ctx)
+func QueryCars(ctx context.Context, a8m *ent.User) error {
+    cars, err := a8m.QueryCars().All(ctx)
     if err != nil {
-        return nil, fmt.Errorf("failed creating car: %w", err)
+        return fmt.Errorf("failed querying user cars: %w", err)
     }
-    log.Println("car was created: ", tesla)
+    log.Println("returned cars:", cars)
 
-    // Create a new car with model "Ford".
-    ford, err := client.Car.
-        Create().
-        SetModel("Ford").
-        SetRegisteredAt(time.Now()).
-        Save(ctx)
+    // What about filtering specific cars.
+    ford, err := a8m.QueryCars().
+        Where(car.Model("Ford")).
+        Only(ctx)
     if err != nil {
-        return nil, fmt.Errorf("failed creating car: %w", err)
+        return fmt.Errorf("failed querying user cars: %w", err)
     }
-    log.Println("car was created: ", ford)
-
-    // Create a new user, and add it the 2 cars.
-    a8m, err := client.User.
-        Create().
-        SetAge(30).
-        SetName("a8m").
-        AddCars(tesla, ford).
-        Save(ctx)
-    if err != nil {
-        return nil, fmt.Errorf("failed creating user: %w", err)
-    }
-    log.Println("user was created: ", a8m)
-    return a8m, nil
+    log.Println(ford)
+    return nil
 }
