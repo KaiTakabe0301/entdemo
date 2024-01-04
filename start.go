@@ -6,7 +6,8 @@ import (
 	"log"
 
 	"entdemo/ent"
-	"entdemo/ent/group"
+	"entdemo/ent/car"
+	"entdemo/ent/user"
 
 	_ "github.com/lib/pq"
 )
@@ -22,21 +23,33 @@ func main() {
         log.Fatalf("failed creating schema resources: %v", err)
     }
 
-    QueryGithub(context.Background(), client)
+    QueryArielCars(context.Background(), client)
 
 }
 
-func QueryGithub(ctx context.Context, client *ent.Client) error {
-    cars, err := client.Group.
+func QueryArielCars(ctx context.Context, client *ent.Client) error {
+    // Get "Ariel" from previous steps.
+    a8m := client.User.
         Query().
-        Where(group.Name("GitHub")). // (Group(Name=GitHub),)
-        QueryUsers().                // (User(Name=Ariel, Age=30),)
-        QueryCars().                 // (Car(Model=Tesla, RegisteredAt=<Time>), Car(Model=Mazda, RegisteredAt=<Time>),)
-        All(ctx)
+        Where(
+            user.HasCars(),
+            user.Name("Ariel"),
+        ).
+        OnlyX(ctx)
+    cars, err := a8m.                       // Get the groups, that a8m is connected to:
+            QueryGroups().                  // (Group(Name=GitHub), Group(Name=GitLab),)
+            QueryUsers().                   // (User(Name=Ariel, Age=30), User(Name=Neta, Age=28),)
+            QueryCars().                    // (Car(Model=Tesla, RegisteredAt=<Time>), Car(Model=Mazda, RegisteredAt=<Time>),)
+            Where(                          //
+                car.Not(                    //  Get Neta and Ariel cars, but filter out
+                    car.Model("Mazda"),     //  those who named "Mazda"
+                ),                          //
+            ).                              //
+            All(ctx)
     if err != nil {
         return fmt.Errorf("failed getting cars: %w", err)
     }
     log.Println("cars returned:", cars)
-    // Output: (Car(Model=Tesla, RegisteredAt=<Time>), Car(Model=Mazda, RegisteredAt=<Time>),)
+    // Output: (Car(Model=Tesla, RegisteredAt=<Time>), Car(Model=Ford, RegisteredAt=<Time>),)
     return nil
 }
