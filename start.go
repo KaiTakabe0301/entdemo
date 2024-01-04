@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"entdemo/ent"
-	"entdemo/ent/car"
 	"entdemo/ent/user"
 
 	_ "github.com/lib/pq"
@@ -29,25 +28,22 @@ func main() {
     }
 
 
-    QueryCars(context.Background(), a8m[0])
-    QueryCars(context.Background(), a8m[1])
+    QueryCarUsers(context.Background(), a8m[1])
 }
 
 
-func QueryCars(ctx context.Context, a8m *ent.User) error {
+func QueryCarUsers(ctx context.Context, a8m *ent.User) error {
     cars, err := a8m.QueryCars().All(ctx)
     if err != nil {
         return fmt.Errorf("failed querying user cars: %w", err)
     }
-    log.Println("returned cars:", cars)
-
-    // What about filtering specific cars.
-    ford, err := a8m.QueryCars().
-        Where(car.Model("Ford")).
-        Only(ctx)
-    if err != nil {
-        return fmt.Errorf("failed querying user cars: %w", err)
+    // Query the inverse edge.
+    for _, c := range cars {
+        owner, err := c.QueryOwner().Only(ctx)
+        if err != nil {
+            return fmt.Errorf("failed querying car %q owner: %w", c.Model, err)
+        }
+        log.Printf("car %q owner: %q\n", c.Model, owner.Name)
     }
-    log.Println(ford)
     return nil
 }
