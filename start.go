@@ -21,7 +21,9 @@ func main() {
         log.Fatalf("failed creating schema resources: %v", err)
     }
 
-    CreateGraph(context.Background(), client)
+    if err := CreateGraph(context.Background(), client); err != nil {
+        log.Fatalf("failed creating graph: %v", err)
+    }
 }
 
 
